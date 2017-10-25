@@ -1,0 +1,638 @@
+head	1.7;
+access;
+symbols;
+locks; strict;
+comment	@// @;
+
+
+1.7
+date	2016.09.18.18.45.34;	author o3-klamert;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2016.09.17.01.39.24;	author o3-klamert;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2016.09.17.01.16.13;	author o3-klamert;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2016.09.16.17.11.24;	author o3-klamert;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2016.09.16.17.08.04;	author o3-klamert;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2016.09.16.17.00.28;	author o3-klamert;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2016.09.16.16.51.10;	author o3-klamert;	state Exp;
+branches;
+next	;
+
+
+desc
+@Another entry of main.cpp because I accidentally messed up the main.cpp,v file.
+@
+
+
+1.7
+log
+@Revised the comments and changed the default log file to be named logfile.txt.
+@
+text
+@/**
+ * Description: The logging mechanism provides functionality such as clearing, adding a log message, getlog, and savelog. 
+ * This is utilized via the main function which uses getopt and perror to parse the command line for arguments and calls every logging function at least twice.
+ * The error message format is executable : time in nanoseconds since epoch : error message. 
+ *
+ *  Author: $Author$
+ *  Date: $Date$
+ *  Log: $Log$
+ */
+
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
+#include <string.h>
+#include <cstring>
+#include <errno.h>
+#include <ctime>
+#include <unistd.h>
+#include <time.h>
+#include "loglib.h"
+#include "loglib.cpp"
+using namespace std;
+
+#define DEBUG false
+
+bool parseCommandLine(int, char**);
+void usage();
+void usage2();
+timespec getTimeSinceEpoch();
+string buildMessageFormat(char**, string);
+
+
+bool parseCommandLine(int argc, char** argv)
+{
+	char c;
+	
+	bool nflag = false;
+
+	while ((c = getopt(argc, argv, ":hn:l:")) != -1)
+	{
+		switch (c)
+		{
+
+			case 'h':
+			{
+                 if(DEBUG == true){
+                 cout << "Inside of case: h \n"; 
+                 }
+                 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Instructions:\n";
+                 cout << "-----------------------------------------------------------------------\n";
+				 usage2();
+				 break;
+			}
+			
+			case 'l':
+			{
+                 if(DEBUG == true){
+                 cout << "Inside of case: l \n";
+                 cout << "OPTARG: ";
+                 cout << optarg << "\n"; 
+                 }
+                 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Saving Log: " << optarg << "\n";
+                 cout << "-----------------------------------------------------------------------\n";
+				 savelog(optarg);
+				 break;
+			}
+			
+			case 'n':
+			{
+                 if(DEBUG == true){
+                 cout << "Inside of case: n \n";
+                 cout << "OPTARG: ";
+                 cout << atoi(optarg) << "\n";
+                 cout << "nflag: " << nflag << "\n"; 
+                 }
+                 
+                 int x = 42;
+                 nflag = true;
+                 string logString = "The value of x is ";
+                 char* cstring;
+                 logString.append((const char*)optarg);
+                 logString.append(".");
+
+                 x = atoi(optarg);
+                 
+                 cstring =(char*) buildMessageFormat(argv,logString).c_str();
+
+                struct data_t* logMessage = reinterpret_cast<data_t*>(malloc( sizeof(struct data_t))); 
+               
+                logMessage->string = cstring;
+                time_t timestamp = time(0);
+                logMessage->time = timestamp;
+                
+                addmsg(*logMessage);
+                
+			    break;
+			}
+			
+			default:
+                 if(DEBUG == true){
+                 cout << "Inside of case: default \n";
+                 }
+                 errno = EINVAL;
+                 cout << "The flag argument did not match the approved flags.\n";
+                 usage2();
+                 return -1;
+                 break;
+                 
+			
+		}
+	}
+	return nflag;
+}
+
+/**
+ * Description: function that returns the time in nanoseconds from the epoch time.
+ * 
+ * Author: Jason Klamert
+ * Date: 9/6/2016
+ */
+timespec getTimeSinceEpoch(){
+       
+       struct timespec ts;
+       clock_gettime(CLOCK_REALTIME, &ts);
+       
+       return ts;
+}
+ 
+ /**
+ * Description: function that prints the proper usage of the routine.
+ * Author: Jason Klamert
+ * Date: 9/6/2016
+ */
+void usage(){
+     perror("Previous unrecognized argument. Please retry the program.\nUse the format logger [-h, -help, -n integer, or -l fileName] \n");
+}  
+
+ /**
+ * Description: function that prints the proper usage of the routine.
+ * Author: Jason Klamert
+ * Date: 9/6/2016
+ */
+void usage2(){
+     cout << "Usage format: main [-h, -help, -n integer, or -l fileName] \n";
+} 
+
+
+ /**
+ * Description: function that prints the proper usage of the routine.
+ * Author: Jason Klamert
+ * Date: 9/6/2016
+ */
+string buildMessageFormat(char** argv, string error){
+     struct timespec tm = getTimeSinceEpoch();
+     //convert s to ns and add the actual counted ns for precision.
+     unsigned long long ms = tm.tv_sec * 1000;
+     unsigned long long us = ms * 1000;
+     unsigned long long ns = us * 1000;
+     ns += tm.tv_nsec;
+     
+     char nano [5000000];
+     sprintf(nano,"%.9ld",ns);
+     
+     string str;
+     str.append(*argv);
+     str.append(" : ");
+     str.append(nano);
+     str.append("nsec");
+     str.append(" : ");
+     str.append(strerror(errno));
+     str.append(" : ");
+     str.append(error);
+     str.append(".\n");
+     
+     return str;
+}
+
+
+
+/**
+ * Description: Routine to use every function of the logging utility at least twice.
+ * This parses the commandline for flags regarding the functions to trigger.
+ * Author: Jason Klamert
+ * Date: 9/6/2016
+ */
+int main(int argc, char **argv)
+{
+	extern char *optarg;
+	extern int optind;
+	int x = 42;
+	bool nflag = false;
+	char standard[20] = "logfile";
+	
+          char* message = "stupid message";
+          struct data_t* logMessage = reinterpret_cast<data_t*>(malloc( sizeof(struct data_t))); 
+               
+                logMessage->string = message;
+                time_t timestamp = time(0);
+                logMessage->time = timestamp;
+                cout << "-----------------------------------------------------------------------\n";
+                cout << "Adding Log String: " << message << "\n";
+                cout << "-----------------------------------------------------------------------\n";
+                addmsg(*logMessage);
+    
+                 char* s = getlog();
+                  
+                 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Getting Log String:\n";
+                 cout << "-----------------------------------------------------------------------\n";
+                 if(s != NULL)
+				 cout << s << "\n";
+				 else
+				 cout << buildMessageFormat(argv,s);
+				 
+				 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Saving Log:\n";
+                 cout << "-----------------------------------------------------------------------\n";
+				 savelog(standard);
+				 
+				 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Clearing Log:\n";
+                 cout << "-----------------------------------------------------------------------\n";
+				 clearlog();
+				 
+				 
+				 
+                 		 
+	                nflag = parseCommandLine(argc,argv);
+    
+                    if(nflag == false){
+                    string logString = "The value of x is ";
+                    char result[500];
+                    char* cstring;
+                    if(sprintf(result,"%d",x) < 0)
+                    perror("Error: sprintf alloc failure.");
+                    logString.append(result);
+                    logString.append(".");
+                 
+                    cstring = (char*)logString.c_str();
+
+                    struct data_t* logMessage = reinterpret_cast<data_t*>(malloc( sizeof(struct data_t))); 
+               
+                    logMessage->string = cstring;
+                    time_t timestamp = time(0);
+                    logMessage->time = timestamp;
+                
+                    cout << "-----------------------------------------------------------------------\n";
+                    cout << "Adding Log String: " << logMessage->string << "\n";
+                    cout << "-----------------------------------------------------------------------\n";
+                    addmsg(*logMessage);
+                    char* s = getlog();
+                    if(s != NULL)
+				    cout << s << "\n";
+				    else
+				    cout << buildMessageFormat(argv,"Log is empty");
+				    
+   				    cout << "-----------------------------------------------------------------------\n";
+                    cout << "Saving Log:\n";
+                    cout << "-----------------------------------------------------------------------\n";
+				    savelog(standard);
+				 
+				    free(logMessage);
+             }
+             
+                 cout << "-----------------------------------------------------------------------\n";
+                 cout << "Clearing Log:\n";
+                 cout << "-----------------------------------------------------------------------\n";
+				 clearlog();
+       
+	return(0);
+}
+
+            
+   
+
+       
+@
+
+
+1.6
+log
+@Simply included the std namespace to cut some text. Redacted all std scope resolution operators.
+@
+text
+@d17 1
+a18 1
+#include <ctime>
+d20 1
+d22 1
+a22 1
+#include "loglib.h"
+d24 1
+a24 1
+#define DEBUG true
+d30 1
+a30 1
+std::string buildMessageFormat(char**, std::string);
+d47 1
+a47 1
+                 std::cout << "Inside of case: h \n"; 
+d49 3
+a51 3
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Instructions:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+d59 3
+a61 3
+                 std::cout << "Inside of case: l \n";
+                 std::cout << "OPTARG: ";
+                 std::cout << optarg << "\n"; 
+d63 3
+a65 3
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Saving Log: " << optarg << "\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+d73 4
+a76 4
+                 std::cout << "Inside of case: n \n";
+                 std::cout << "OPTARG: ";
+                 std::cout << atoi(optarg) << "\n";
+                 std::cout << "nflag: " << nflag << "\n"; 
+d81 1
+a81 1
+                 std::string logString = "The value of x is ";
+d93 1
+a93 1
+                std::time_t timestamp = std::time(0);
+d103 1
+a103 1
+                 std::cout << "Inside of case: default \n";
+d106 1
+a106 1
+                 std::cout << "The flag argument did not match the approved flags.\n";
+d119 1
+a119 1
+ * Note: This with the C utilities a decent amount of precision is lost when asking for nanoseconds.
+d146 1
+a146 1
+     std::cout << "Usage format: main [-h, -help, -n integer, or -l fileName] \n";
+d155 1
+a155 1
+std::string buildMessageFormat(char** argv, std::string error){
+d166 1
+a166 1
+     std::string str;
+d194 1
+a194 1
+	char standard[20] = "standard";
+d200 1
+a200 1
+                std::time_t timestamp = std::time(0);
+d202 3
+a204 3
+                std::cout << "-----------------------------------------------------------------------\n";
+                std::cout << "Adding Log String: " << message << "\n";
+                std::cout << "-----------------------------------------------------------------------\n";
+d209 3
+a211 3
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Getting Log String:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+d213 1
+a213 1
+				 std::cout << s << "\n";
+d215 1
+a215 1
+				 std::cout << buildMessageFormat(argv,s);
+d217 3
+a219 3
+				 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Saving Log:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+d222 3
+a224 3
+				 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Clearing Log:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+d233 1
+a233 1
+                    std::string logString = "The value of x is ";
+d246 1
+a246 1
+                    std::time_t timestamp = std::time(0);
+d249 3
+a251 3
+                    std::cout << "-----------------------------------------------------------------------\n";
+                    std::cout << "Adding Log String: " << logMessage->string << "\n";
+                    std::cout << "-----------------------------------------------------------------------\n";
+d255 1
+a255 1
+				    std::cout << s << "\n";
+d257 1
+a257 1
+				    std::cout << buildMessageFormat(argv,"Log is empty");
+d259 3
+a261 3
+   				    std::cout << "-----------------------------------------------------------------------\n";
+                    std::cout << "Saving Log:\n";
+                    std::cout << "-----------------------------------------------------------------------\n";
+d267 3
+a269 3
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Clearing Log:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+@
+
+
+1.5
+log
+@final copy. Revised away from the strcit commandline setup. Now does not rely on the user for the use each function twice.
+@
+text
+@d266 1
+a266 1
+             std::cout << "-----------------------------------------------------------------------\n";
+@
+
+
+1.4
+log
+@Adjust the scope of some variables and implemented some more logs with new time function.
+@
+text
+@d19 1
+d25 1
+a25 1
+int parseCommandLine(int, char**);
+d28 2
+a29 2
+unsigned long long getTimeSinceEpoch();
+void buildMessageFormat(char**, std::string);
+d32 1
+a32 1
+int parseCommandLine(int argc, char** argv)
+d35 2
+d38 1
+a38 1
+	while ((c = getopt(argc, argv, ":hn:l:cg")) != -1)
+a68 26
+			case 'c':
+			{
+                 if(DEBUG == true){
+                 std::cout << "Inside of case: c \n"; 
+                 }
+                 
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Clearing Log:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+				 clearlog();
+				 break;
+			}
+			
+			case 'g':
+			{
+                 if(DEBUG == true){
+                 std::cout << "Inside of case: g \n";
+                 }
+                 
+                 std::cout << "-----------------------------------------------------------------------\n";
+                 std::cout << "Getting Log String:\n";
+                 std::cout << "-----------------------------------------------------------------------\n";
+				 std::cout << getlog() << "\n";
+				 break;
+			}
+			
+d78 1
+d87 1
+a87 1
+                 cstring = (char*)logString.c_str();
+d113 1
+d122 1
+a122 6
+unsigned long long getTimeSinceEpoch(){
+         
+       //unsigned long long systemTime = time(0); //Time returned in seconds.
+       //unsigned long long ms = systemTime * 1000; //Time calculated into milliseconds.
+       //unsigned long long us = ms * 1000; //Time calculated into microseconds.
+       //unsigned long long ns = us * 1000; //Time calculated in nanoseconds.
+d136 1
+a136 1
+     perror("Previous unrecognized argument. Please retry the program.\nUse the format logger [-h, -help, -n integer, -c, -g, or -l fileName] \n");
+d145 1
+a145 1
+     std::cout << "Usage format: main [-h, -help, -n integer, -c, -g, or -l fileName] \n";
+d154 23
+a176 2
+void buildMessageFormat(char** argv, std::string error){
+     std::cout << *argv << ": " << getTimeSinceEpoch() << ": " << strerror(errno) << ": " << error << ".\n";
+d191 1
+d193 37
+a229 12
+	int x = 42;
+
+	if(argc < 2)
+		{
+            errno = EINVAL;
+			std::string error = "Invalid Arg(s)/Too Few Arg(s)";
+			buildMessageFormat(argv,error);
+			usage2();
+			return -1;
+		}	
+
+    parseCommandLine(argc,argv);
+d231 8
+a238 5
+    if(nflag == false){
+              std::string logString = "The value of x is ";
+                 char* cstring;
+                 logString.append(std::to_string(x));
+                 logString.append(".");
+d240 1
+a240 1
+                 cstring = (char*)logString.c_str();
+d242 1
+a242 1
+                struct data_t* logMessage = reinterpret_cast<data_t*>(malloc( sizeof(struct data_t))); 
+d244 3
+a246 3
+                logMessage->string = cstring;
+                std::time_t timestamp = std::time(0);
+                logMessage->time = timestamp;
+d248 16
+a263 1
+                addmsg(*logMessage);
+d265 5
+@
+
+
+1.3
+log
+@New Revision.
+@
+text
+@d6 3
+a8 6
+ *  Author: $Author: o3-klamert $
+ *  Date: $Date: 2016/09/16 17:00:28 $
+ *  Log: $Log: main.cpp,v $
+ *  Log: Revision 1.2  2016/09/16 17:00:28  o3-klamert
+ *  Log: Updated version of main.cpp. The log message format is now applied to all messages generated and the time has nanosecond grainularity.
+ *  Log:
+a32 3
+    
+    
+    int x = 42;
+d197 1
+@
+
+
+1.2
+log
+@Updated version of main.cpp. The log message format is now applied to all messages generated and the time has nanosecond grainularity.
+@
+text
+@d6 6
+a11 3
+ *  Author: $Author$
+ *  Date: $Date$
+ *  Log: $Log$
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d100 2
+a101 1
+                 std::cout << atoi(optarg) << "\n"; 
+d104 1
+d148 4
+a151 4
+       unsigned long long systemTime = time(0); //Time returned in seconds.
+       unsigned long long ms = systemTime * 1000; //Time calculated into milliseconds.
+       unsigned long long us = ms * 1000; //Time calculated into microseconds.
+       unsigned long long ns = us * 1000; //Time calculated in nanoseconds.
+d153 4
+a156 1
+       return ns;
+d199 1
+d211 17
+@

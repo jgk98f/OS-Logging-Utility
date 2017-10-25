@@ -1,0 +1,16 @@
+CC=g++
+CFLAGS=-Wall -g -o
+
+MakeFile:
+	$(CC) $(CFLAGS)  main main.cpp
+
+.PHONY: clean
+
+clean:
+	rm -f *.o
+	rm -f *.txt
+	rm -f *.exe
+	rm -f *.rc
+	rm -f *.dev
+	rm -f *.win
+	rm -f *.layout

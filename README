@@ -1,0 +1,28 @@
+README:
+----------------------------------------------------------------------------------
+This project facilitates a program that test the logging utility named loglib.cpp.
+This logging utility allows the user to add messages, save log with designated
+name, clear log, and get the log string. This utilizes two static structures to
+act like a log and it is implemented in a linked list. The program that displays
+the logging facility is named main.cpp and it calls all of the logging functions
+exactly twice, no matter what flags the user enters. 
+
+Usage:
+      Usage format: main [-h, -help, -n integer, or -l fileName]
+      
+The flags -h and -help trigger a usage function to display how the program is to
+be used. The flag -n sets an integer value to the argument provided after the flag.
+The -l flag specifies the name of the log file to save to. Otherwise, the program 
+uses the file named 'logfile.txt' to save the log messages to.
+
+Compiling:
+          make -f MakeFile
+          
+The project includes a make file for compiling the project with the required flags 
+and names the executable 'main'. To run this executable refer to the usage section.
+
+Cleaning:
+         make -f MakeFile clean
+        
+The above command is the cleaning routine for removing the object files and the other
+dev environment such as *.layout and *.dev files.     

@@ -1,0 +1,59 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.2
+date	2016.09.17.01.17.12;	author o3-klamert;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2016.09.14.17.16.04;	author o3-klamert;	state Exp;
+branches;
+next	;
+
+
+desc
+@Header for the OS1 project. This shouldn't need to be changed.
+@
+
+
+1.2
+log
+@Final version of loglib.h which had to be reverted back to a struct next pointer.
+@
+text
+@#include <time.h>
+#ifndef loglib
+#define loglib
+struct data_t {
+     time_t time;
+     char *string;
+};
+
+struct log_t {
+     data_t item;
+     struct log_t *next = NULL;
+};
+
+int addmsg(data_t data);
+void clearlog(void);
+char *getlog(void);
+int savelog(char *); 
+#endif
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d11 1
+a11 1
+     log_t *next;
+@
